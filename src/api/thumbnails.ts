@@ -4,39 +4,11 @@ import { getVideo, updateVideo } from "../db/videos";
 import type { ApiConfig } from "../config";
 import type { BunRequest } from "bun";
 import { BadRequestError, NotFoundError, UserForbiddenError } from "./errors";
-import { getInMemoryURL } from "./assets";
+import { Buffer } from "buffer";
+import path from "path";
+import { getAssetDiskPath, getAssetURL, mediaTypeToExt } from "./assets";
 
-type Thumbnail = {
-  data: ArrayBuffer;
-  mediaType: string;
-};
-
-const videoThumbnails: Map<string, Thumbnail> = new Map();
 const MAX_UPLOAD_SIZE = 10 << 20;
-
-export async function handlerGetThumbnail(cfg: ApiConfig, req: BunRequest) {
-  const { videoId } = req.params as { videoId?: string };
-  if (!videoId) {
-    throw new BadRequestError("Invalid video ID");
-  }
-
-  const video = getVideo(cfg.db, videoId);
-  if (!video) {
-    throw new NotFoundError("Couldn't find video");
-  }
-
-  const thumbnail = videoThumbnails.get(videoId);
-  if (!thumbnail) {
-    throw new NotFoundError("Thumbnail not found");
-  }
-
-  return new Response(thumbnail.data, {
-    headers: {
-      "Content-Type": thumbnail.mediaType,
-      "Cache-Control": "no-store",
-    },
-  });
-}
 
 export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
   const { videoId } = req.params as { videoId?: string };
@@ -71,14 +43,14 @@ export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
     throw new BadRequestError("Missing Content-Type for thumbnail");
   }
 
-  const fileData = await file.arrayBuffer();
-  if (!fileData) {
-    throw new Error("Error reding file data");
-  }
+  const ext = mediaTypeToExt(mediaType);
 
-  videoThumbnails.set(videoId, { data: fileData, mediaType });
+  const fileName = `${video.id}${ext}`;
+  const assetDiskPath = getAssetDiskPath(cfg, fileName);
 
-  const urlPath = getInMemoryURL(cfg, videoId);
+  await Bun.write(assetDiskPath, file);
+
+  const urlPath = getAssetURL(cfg, fileName);
   video.thumbnailURL = urlPath;
   updateVideo(cfg.db, video);
 
