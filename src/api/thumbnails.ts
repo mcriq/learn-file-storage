@@ -23,6 +23,8 @@ export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
     throw new NotFoundError("Video not found");
   }
 
+  console.log("VIDEO: ", video);
+
   if (userID !== video.userID) {
     throw new UserForbiddenError("Not authorized to update this video");
   }
