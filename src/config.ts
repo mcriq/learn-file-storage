@@ -15,6 +15,13 @@ export type ApiConfig = {
   port: string;
 };
 
+// console.log("Environment variables:", {
+//   S3_BUCKET: process.env.S3_BUCKET,
+//   S3_REGION: process.env.S3_REGION,
+//   AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
+//   AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
+// });
+
 const pathToDB = envOrThrow("DB_PATH");
 const jwtSecret = envOrThrow("JWT_SECRET");
 const platform = envOrThrow("PLATFORM");
